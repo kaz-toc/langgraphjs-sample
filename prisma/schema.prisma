@@ -1,0 +1,124 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String?
+  
+  // Relations
+  chats     Chat[]
+  documents Document[]
+  suggestions Suggestion[]
+  
+  @@map("User")
+}
+
+model Chat {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  title       String
+  userId      String
+  visibility  String   @default("private") // 'public' | 'private'
+  lastContext String?  // JSON string
+  
+  // Relations
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Message_v2[]
+  votes    Vote_v2[]
+  streams  Stream[]
+  
+  @@map("Chat")
+}
+
+model Message_v2 {
+  id          String   @id @default(uuid())
+  chatId      String
+  role        String
+  parts       String   // JSON string
+  attachments String   // JSON string
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  chat Chat    @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  votes Vote_v2[]
+  
+  @@map("Message_v2")
+}
+
+model Vote_v2 {
+  chatId    String
+  messageId String
+  isUpvoted Boolean
+  
+  // Relations
+  chat    Chat       @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  message Message_v2 @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  
+  @@id([chatId, messageId])
+  @@map("Vote_v2")
+}
+
+model Document {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  title     String
+  content   String?
+  kind      String   @default("text") // 'text' | 'code' | 'image' | 'sheet'
+  userId    String
+  
+  // Relations
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  suggestions Suggestion[]
+  
+  @@map("Document")
+}
+
+model Suggestion {
+  id                  String   @id @default(uuid())
+  documentId          String
+  documentCreatedAt   DateTime
+  originalText        String
+  suggestedText       String
+  description         String?
+  isResolved          Boolean  @default(false)
+  userId              String
+  createdAt           DateTime @default(now())
+  
+  // Relations
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  
+  @@map("Suggestion")
+}
+
+model Stream {
+  id        String   @id @default(uuid())
+  chatId    String
+  createdAt DateTime @default(now())
+  
+  // Relations
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  
+  @@map("Stream")
+}
+
+model LangGraphSession {
+  id          String   @id @default(cuid())
+  sessionId   String   @unique
+  state       String   // JSON string of the graph state
+  checkpoint  String?  // JSON string of the checkpoint
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("langgraph_sessions")
+}
