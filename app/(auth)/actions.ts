@@ -2,13 +2,24 @@
 
 import { z } from "zod";
 
-import { createUser, getUser } from "@/lib/db/queries-prisma";
+import {
+  createUser,
+  getUser,
+  updateUserProfile as updateUserProfileDb,
+} from "@/lib/db/queries-prisma";
 
 import { signIn } from "./auth";
 
 const authFormSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
+});
+
+const profileUpdateSchema = z.object({
+  userId: z.string(),
+  name: z.string().optional(),
+  country: z.string().optional(),
+  zipCode: z.string().optional(),
 });
 
 export interface LoginActionState {
@@ -71,6 +82,36 @@ export const register = async (
       email: validatedData.email,
       password: validatedData.password,
       redirect: false,
+    });
+
+    return { status: "success" };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { status: "invalid_data" };
+    }
+
+    return { status: "failed" };
+  }
+};
+
+export interface UpdateProfileActionState {
+  status: "idle" | "in_progress" | "success" | "failed" | "invalid_data";
+}
+
+export const updateUserProfile = async (data: {
+  userId: string;
+  name?: string;
+  country?: string;
+  zipCode?: string;
+}): Promise<UpdateProfileActionState> => {
+  try {
+    const validatedData = profileUpdateSchema.parse(data);
+
+    await updateUserProfileDb({
+      userId: validatedData.userId,
+      name: validatedData.name,
+      country: validatedData.country,
+      zipCode: validatedData.zipCode,
     });
 
     return { status: "success" };

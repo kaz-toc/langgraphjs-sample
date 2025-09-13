@@ -39,11 +39,11 @@ pnpm install
 # Database
 DATABASE_URL="file:./dev.db"
 
-# OpenAI API
-OPENAI_API_KEY=your_openai_api_key_here
+# Anthropic API (Claude)
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
 
 # NextAuth.js
-NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_URL=http://localhost:33333
 NEXTAUTH_SECRET=your_nextauth_secret_here
 ```
 

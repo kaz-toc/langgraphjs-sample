@@ -1,29 +1,46 @@
-import { StateGraph, END, START } from "@langchain/langgraph";
+import { StateGraph, END, START, Annotation } from "@langchain/langgraph";
 import { BaseMessage, HumanMessage, AIMessage } from "@langchain/core/messages";
-import { ChatOpenAI } from "@langchain/openai";
+import { ChatAnthropic } from "@langchain/anthropic";
 
-// Define the state interface
-export interface GraphState {
-  messages: BaseMessage[];
-  userId?: string;
-  sessionId?: string;
-}
+// Define the state annotation
+const GraphState = Annotation.Root({
+  messages: Annotation<BaseMessage[]>({
+    reducer: (left: BaseMessage[], right: BaseMessage[]) => left.concat(right),
+    default: () => [],
+  }),
+  userId: Annotation<string | undefined>({
+    reducer: (left: string | undefined, right: string | undefined) =>
+      right ?? left,
+    default: () => undefined,
+  }),
+  sessionId: Annotation<string | undefined>({
+    reducer: (left: string | undefined, right: string | undefined) =>
+      right ?? left,
+    default: () => undefined,
+  }),
+});
+
+// Define the state type
+export type GraphStateType = typeof GraphState.State;
 
 // Initialize the LLM
-const llm = new ChatOpenAI({
-  modelName: "gpt-3.5-turbo",
+const llm = new ChatAnthropic({
+  model: "claude-3-sonnet-20240229",
   temperature: 0.7,
+  apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 // Define nodes
-async function callModel(state: GraphState): Promise<Partial<GraphState>> {
+async function callModel(
+  state: GraphStateType
+): Promise<Partial<GraphStateType>> {
   const response = await llm.invoke(state.messages);
   return {
-    messages: [...state.messages, response],
+    messages: [response],
   };
 }
 
-async function shouldContinue(state: GraphState): Promise<string> {
+async function shouldContinue(state: GraphStateType): Promise<string> {
   const lastMessage = state.messages[state.messages.length - 1];
 
   // Simple logic: if the last message is from AI, end the conversation
@@ -36,31 +53,13 @@ async function shouldContinue(state: GraphState): Promise<string> {
 
 // Create the graph
 export function createChatGraph() {
-  const workflow = new StateGraph<GraphState>({
-    channels: {
-      messages: {
-        reducer: (left: BaseMessage[], right: BaseMessage[]) =>
-          left.concat(right),
-        default: () => [],
-      },
-      userId: {
-        default: () => undefined,
-      },
-      sessionId: {
-        default: () => undefined,
-      },
-    },
-  });
-
-  // Add nodes
-  workflow.addNode("call_model", callModel);
-
-  // Add edges
-  workflow.addEdge(START, "call_model");
-  workflow.addConditionalEdges("call_model", shouldContinue, {
-    call_model: "call_model",
-    [END]: END,
-  });
+  const workflow = new StateGraph(GraphState)
+    .addNode("call_model", callModel)
+    .addEdge(START, "call_model")
+    .addConditionalEdges("call_model", shouldContinue, {
+      call_model: "call_model",
+      [END]: END,
+    });
 
   return workflow.compile();
 }

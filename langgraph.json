@@ -2,10 +2,10 @@
   "dependencies": [
     "@langchain/langgraph",
     "@langchain/core",
-    "@langchain/openai"
+    "@langchain/anthropic"
   ],
   "graphs": {
-    "chat_graph": "./lib/langgraph/graph.ts"
+    "chat_graph": "./lib/langgraph/graph.ts:chatGraph"
   },
   "env": ".env.local"
 }

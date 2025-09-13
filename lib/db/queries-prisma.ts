@@ -9,6 +9,9 @@ export type User = {
   id: string;
   email: string;
   password?: string | null;
+  name?: string | null;
+  country?: string | null;
+  zipCode?: string | null;
 };
 
 export async function getUser(email: string): Promise<Array<User>> {
@@ -19,6 +22,9 @@ export async function getUser(email: string): Promise<Array<User>> {
         id: true,
         email: true,
         password: true,
+        name: true,
+        country: true,
+        zipCode: true,
       },
     });
 
@@ -186,5 +192,62 @@ export async function getChatById({ id }: { id: string }) {
     return chat;
   } catch (error) {
     throw new ChatSDKError("bad_request:database", "Failed to get chat by id");
+  }
+}
+
+export async function getUserById(id: string): Promise<User | null> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        name: true,
+        country: true,
+        zipCode: true,
+      },
+    });
+
+    return user;
+  } catch (error) {
+    throw new ChatSDKError("bad_request:database", "Failed to get user by id");
+  }
+}
+
+export async function updateUserProfile({
+  userId,
+  name,
+  country,
+  zipCode,
+}: {
+  userId: string;
+  name?: string;
+  country?: string;
+  zipCode?: string;
+}) {
+  try {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        name,
+        country,
+        zipCode,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        country: true,
+        zipCode: true,
+      },
+    });
+
+    return user;
+  } catch (error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to update user profile"
+    );
   }
 }

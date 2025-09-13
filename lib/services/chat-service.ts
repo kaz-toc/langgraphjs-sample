@@ -1,5 +1,5 @@
 import { prisma } from "../prisma";
-import { chatGraph, GraphState } from "../langgraph/graph";
+import { chatGraph, GraphStateType } from "../langgraph/graph";
 import { HumanMessage, BaseMessage } from "@langchain/core/messages";
 import { nanoid } from "nanoid";
 
@@ -32,10 +32,11 @@ export class ChatService {
     content: string,
     role: "user" | "assistant" | "system"
   ) {
-    return await prisma.message.create({
+    return await prisma.message_v2.create({
       data: {
         id: nanoid(),
-        content,
+        parts: JSON.stringify([{ type: "text", text: content }]),
+        attachments: "[]",
         role,
         chatId,
       },
@@ -54,18 +55,23 @@ export class ChatService {
 
     // Convert messages to LangChain format
     const messages: BaseMessage[] = chat.messages.map((msg) => {
+      const parts = JSON.parse(msg.parts);
+      const content = parts
+        .map((part: any) => part.text || part.content || "")
+        .join("");
+
       if (msg.role === "user") {
-        return new HumanMessage(msg.content);
+        return new HumanMessage(content);
       }
       // Add other message types as needed
-      return new HumanMessage(msg.content); // Fallback
+      return new HumanMessage(content); // Fallback
     });
 
     // Add the new user message
     messages.push(new HumanMessage(userMessage));
 
     // Create initial state
-    const initialState: GraphState = {
+    const initialState = {
       messages,
       userId,
       sessionId: chatId,
@@ -96,7 +102,7 @@ export class ChatService {
   async getUserChats(userId: string) {
     return await prisma.chat.findMany({
       where: { userId },
-      orderBy: { updatedAt: "desc" },
+      orderBy: { createdAt: "desc" },
       include: {
         messages: {
           take: 1,

@@ -1,14 +1,4 @@
-# LangGraph.js Sample Makefile
-# 
-# 使用方法:
-#   make dev     - Next.js開発サーバーを起動 (port 33333)
-#   make studio  - LangGraph Studioを起動
-#   make install - 依存関係をインストール
-#   make setup   - プロジェクトの初期セットアップ
-#   make clean   - node_modules等をクリーンアップ
-#   make help    - ヘルプを表示
-
-.PHONY: dev studio install setup clean help db-setup db-reset prisma-studio
+.PHONY: dev graph install setup clean help db-setup db-reset prisma-studio
 
 # デフォルトターゲット
 .DEFAULT_GOAL := help
@@ -19,9 +9,9 @@ dev:
 	pnpm dev
 
 # LangGraph Studioを起動  
-studio:
+graph:
 	@echo "📊 LangGraph Studioを起動中..."
-	pnpm langgraph:studio
+	pnpm langgraph:dev
 
 # 依存関係をインストール
 install:
@@ -33,7 +23,7 @@ setup: install db-setup
 	@echo "✅ プロジェクトのセットアップが完了しました"
 	@echo ""
 	@echo "次のステップ:"
-	@echo "1. .env.localファイルを編集してOpenAI APIキーを設定"
+	@echo "1. .env.localファイルを編集してAnthropic APIキーを設定"
 	@echo "2. make dev でNext.js開発サーバーを起動"
 	@echo "3. make studio でLangGraph Studioを起動"
 
