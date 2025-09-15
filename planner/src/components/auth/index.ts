@@ -1,0 +1,1 @@
+export { AuthenticatedChat } from "./AuthenticatedChat";
